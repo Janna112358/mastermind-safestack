@@ -7,6 +7,7 @@ type Game =
         CodeLen : int
         SecretCode : string
         History : list<Guess>
+        IsWinner : bool
     }
 and Guess = 
     {

@@ -16,7 +16,7 @@ let startGame inputLen =
             inputLen, "Code length accepted"
     
     let code = randomCode codeLen 
-    { CodeLen = codeLen; SecretCode = code; History = [] }//, message
+    { CodeLen = codeLen; SecretCode = code; History = []; IsWinner = false }//, message
 
 let isValidGuess ( guess : string ) (game : Game ) = 
     let isNumber = 
@@ -57,9 +57,11 @@ let score (guess : string) (game : Game ) =
             countCorrect <- countCorrect + 1
             countIn <- countIn - 1
     
+    let isWinner = ( countCorrect = game.CodeLen)
+    
     let newGuess = 
         { Guess = guess; ScorePlace = Some countCorrect; ScoreOther = Some countIn}
-    { game with History = game.History @ [newGuess] }
+    { game with History = game.History @ [newGuess]; IsWinner = isWinner }
     
 
     

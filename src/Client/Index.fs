@@ -17,6 +17,7 @@ type Msg =
     | InputGuess of string
     | IsValidInputGuess of bool
     | ScoreGuess
+    | CheckWinner
 
 let gameApi = 
     Remoting.createApi()
@@ -61,6 +62,17 @@ open Fable.React
 open Fable.React.Props
 open Fulma
 
+let viewSecert model distpach = 
+    let secretString =
+        match model.Game with 
+        | Some game -> 
+            sprintf "Secret code: %s" game.SecretCode 
+        | None -> "..."
+    [
+        Tile.child 
+            [Tile.Modifiers [Modifier.TextColor IsGreyLight]] 
+            [str secretString]
+    ]
 
 let viewListAsTiles stringList = 
     stringList
@@ -73,53 +85,66 @@ let viewListAsTiles stringList =
 let viewNewGuess ( model : Model ) ( dispatch : Msg -> unit ) = 
     match model.Game with 
     | None -> []
-    | Some _ -> 
+    | Some game -> 
 
-        [ Tile.child 
-            []
-            [
-                Field.div [ Field.IsGrouped ]
-                    [
-                        Label.label 
-                            [ 
-                                Label.Modifiers [ Modifier.Spacing (Spacing.MarginLeftAndRight, Spacing.Is2) ]
-                            ] 
-                            [ str "Next Guess" ]
-                        Control.div 
-                            [
-                                
-                            ] 
-                            [
-                                Input.text
-                                    [ 
-                                    Input.Color IsInfo
-                                    Input.Size IsSmall 
+        match game.IsWinner with 
+        | true -> 
+            [ Tile.child 
+                [
+                    Tile.Modifiers [ 
+                    Modifier.TextAlignment (Screen.All, TextAlignment.Centered) 
+                    Modifier.TextColor IsSuccess
+                    Modifier.TextSize (Screen.All, TextSize.Is4)
+                ] ]
+                [str "~~~~Winner!~~~~"]
+            ]
+        | false -> 
 
-                                    Input.Placeholder "1234"
-                                    Input.OnChange (fun x -> dispatch (InputGuess x.Value) )
-                                    ]
-                            ]
+            [ Tile.child 
+                []
+                [
+                    Field.div [ Field.IsGrouped ]
+                        [
+                            Label.label 
+                                [ 
+                                    Label.Modifiers [ Modifier.Spacing (Spacing.MarginLeftAndRight, Spacing.Is2) ]
+                                ] 
+                                [ str "Next Guess" ]
+                            Control.div 
+                                [
+                                    
+                                ] 
+                                [
+                                    Input.text
+                                        [ 
+                                        Input.Color IsInfo
+                                        Input.Size IsSmall
 
-                        Button.button 
-                            [
-                                Button.Modifiers [ Modifier.Spacing (Spacing.MarginLeftAndRight, Spacing.Is2) ]
-                                Button.Color IsInfo
-                                Button.Disabled (not model.ValidGuess)
-                                Button.OnClick (fun _ -> dispatch ScoreGuess )
-                            ] 
-                            [str "Submit"]
+                                        Input.Placeholder "1234"
+                                        Input.OnChange (fun x -> dispatch (InputGuess x.Value) )
+                                        ]
+                                ]
 
-                        Help.help 
-                            [
-                                Help.Color IsDanger
-                            ]
-                            [ match model.ValidGuess with 
-                                | true -> str ""
-                                | false -> str "Invalid guess"
-                            ]
-                    ]
-            ] 
-        ]
+                            Button.button 
+                                [
+                                    Button.Modifiers [ Modifier.Spacing (Spacing.MarginLeftAndRight, Spacing.Is2) ]
+                                    Button.Color IsInfo
+                                    Button.Disabled (not model.ValidGuess)
+                                    Button.OnClick (fun _ -> dispatch ScoreGuess )
+                                ] 
+                                [str "Submit"]
+
+                            Help.help 
+                                [
+                                    Help.Color IsDanger
+                                ]
+                                [ match model.ValidGuess with 
+                                    | true -> str ""
+                                    | false -> str "Invalid guess"
+                                ]
+                        ]
+                ] 
+            ]
 
 let viewGuessHistory model dispatch = 
     match model.Game with
@@ -130,15 +155,16 @@ let viewGuessHistory model dispatch =
             let displayStr = 
                 match guess.ScorePlace, guess.ScoreOther with 
                 | Some a, Some b ->
-                    sprintf "guess: %s    %d %d" guess.Guess a b
+                    sprintf "%s    --> %d - %d" guess.Guess a b
                 | _, _ -> 
-                    sprintf "guess: %s    - -" guess.Guess 
+                    sprintf "%s    --> ... " guess.Guess 
 
             Tile.child [] [str displayStr] 
             )
     | None -> []
 
 let view (model : Model) (dispatch : Msg -> unit) =
+
     Tile.ancestor [
         Tile.IsVertical
         Tile.Modifiers [ Modifier.Spacing (Spacing.MarginLeftAndRight, Spacing.Is2) ]
@@ -171,37 +197,35 @@ let view (model : Model) (dispatch : Msg -> unit) =
                 Tile.Size Tile.Is5
             ] [
                 Box.box' []
-                    [ (Heading.h4 []
+                    [ (Heading.h3 []
                         [str "rules" ])
-                      (str "This is a code breaking game. Crack the code made up of digits 0-9 by putting in consecutive guesses. 
+                      (str "This is a code breaking game. Crack the code of four digits (0-9) by putting in consecutive guesses. 
                       After each guess, you will get two scores: The first score indicates the number of digits that are correct AND
                       in the right place. The second indiciates the number of other correct digits, i.e. which are NOT in the right place.
-                      Try and use as few guesses as possible. ")
-                      (str "Press \"start\" to begin, good luck!")
+                      Try and use as few guesses as possible..")
+                      (Heading.h5 [] 
+                        [str "Press \"start\" to begin, good luck!"])
                     ]
             ]
         ]
 
-        Tile.parent [
-            Tile.Modifiers [ Modifier.Spacing (Spacing.MarginLeftAndRight, Spacing.Is6) ]
-        ] 
-            ( match model.Game with 
-            | Some game ->
-                [
-                    str ("Secret code: " + game.SecretCode)
-                ]
-            | None-> [str "..."] )
-
         Tile.parent 
             [
+                Tile.Size Tile.Is8
                 Tile.IsVertical
-                Tile.Modifiers [ Modifier.Spacing (Spacing.MarginLeftAndRight, Spacing.Is6) ]
+                Tile.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Centered) ]
+                Tile.Modifiers [ Modifier.BackgroundColor IsDark
+                                 Modifier.TextColor IsWhite ]
+                //Tile.Modifiers [ Modifier.Spacing ( Spacing.MarginLeft, Spacing.Is6) ]
             ] 
-            ( viewGuessHistory model dispatch )
+            ( (viewSecert model dispatch ) @ ( viewGuessHistory model dispatch ) )
         
         Tile.parent 
             [
-                Tile.Modifiers [ Modifier.Spacing (Spacing.MarginLeftAndRight, Spacing.Is6) ]
+                Tile.Size Tile.Is8
+                Tile.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Centered)
+                                 //Modifier.Spacing (Spacing.MarginLeftAndRight, Spacing.Is6)
+                               ]
             ]
             (viewNewGuess model dispatch )
     ]
