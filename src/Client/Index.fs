@@ -18,6 +18,7 @@ type Msg =
     | IsValidInputGuess of bool
     | ScoreGuess
     | CheckWinner
+    | ClearGame
 
 let gameApi = 
     Remoting.createApi()
@@ -55,6 +56,8 @@ let update msg model =
             match model.NewGuess with 
             | None -> model, Cmd.none // to do: probably should not happen?
             | Some newGuess -> {model with NewGuess = None}, Cmd.OfAsync.perform gameApi.Score (newGuess, game) UpdateGame
+    | model, ClearGame -> 
+        init()
     | _, _ -> 
         model, Cmd.none
 
@@ -62,7 +65,7 @@ open Fable.React
 open Fable.React.Props
 open Fulma
 
-let viewSecert model distpach = 
+let viewSecret model distpach = 
     let secretString =
         match model.Game with 
         | Some game -> 
@@ -179,19 +182,35 @@ let view (model : Model) (dispatch : Msg -> unit) =
             ]
         ]
 
-        Tile.parent [ 
+        Tile.parent [
         ] [
-            Tile.child [
-                Tile.Size Tile.Is3
-                Tile.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Centered) 
-                                 Modifier.Spacing (Spacing.PaddingTop, Spacing.Is6) ]
-            ] [
-                (Button.button [
-                    Button.Color IsPrimary
-                    Button.OnClick (fun _ -> dispatch StartGame)
+            Tile.parent 
+                [
+                    Tile.Size Tile.Is1
+                    Tile.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Centered) ]
+                    Tile.IsVertical
+                ] 
+                [
+                        Tile.child [ ] [
+                        Button.button 
+                            [
+                                Button.Color IsPrimary
+                                Button.Disabled ( not model.Game.IsNone )
+                                Button.OnClick (fun _ -> dispatch StartGame)
+                            ]
+                            [ str "Start" ]
+                        ]
+
+                        Tile.child [] [
+                        Button.button 
+                            [
+                                Button.Color IsDanger
+                                Button.Disabled ( model.Game.IsNone )
+                                Button.OnClick (fun _ -> dispatch ClearGame)
+                            ]
+                            [ str "Clear"]
+                        ]
                 ]
-                [ str "Start" ])
-            ]
 
             Tile.child [
                 Tile.Size Tile.Is5
@@ -202,7 +221,7 @@ let view (model : Model) (dispatch : Msg -> unit) =
                       (str "This is a code breaking game. Crack the code of four digits (0-9) by putting in consecutive guesses. 
                       After each guess, you will get two scores: The first score indicates the number of digits that are correct AND
                       in the right place. The second indiciates the number of other correct digits, i.e. which are NOT in the right place.
-                      Try and use as few guesses as possible..")
+                      Try and use as few guesses as possible...")
                       (Heading.h5 [] 
                         [str "Press \"start\" to begin, good luck!"])
                     ]
@@ -218,7 +237,8 @@ let view (model : Model) (dispatch : Msg -> unit) =
                                  Modifier.TextColor IsWhite ]
                 //Tile.Modifiers [ Modifier.Spacing ( Spacing.MarginLeft, Spacing.Is6) ]
             ] 
-            ( (viewSecert model dispatch ) @ ( viewGuessHistory model dispatch ) )
+            //( (viewSecret model dispatch ) @ ( viewGuessHistory model dispatch ) )
+            ( viewGuessHistory model dispatch )
         
         Tile.parent 
             [
