@@ -230,22 +230,19 @@ let view (model : Model) (dispatch : Msg -> unit) =
 
         Tile.parent 
             [
-                Tile.Size Tile.Is8
+                Tile.Size Tile.Is6
                 Tile.IsVertical
                 Tile.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Centered) ]
                 Tile.Modifiers [ Modifier.BackgroundColor IsDark
                                  Modifier.TextColor IsWhite ]
-                //Tile.Modifiers [ Modifier.Spacing ( Spacing.MarginLeft, Spacing.Is6) ]
             ] 
             //( (viewSecret model dispatch ) @ ( viewGuessHistory model dispatch ) )
             ( viewGuessHistory model dispatch )
         
         Tile.parent 
             [
-                Tile.Size Tile.Is8
-                Tile.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Centered)
-                                 //Modifier.Spacing (Spacing.MarginLeftAndRight, Spacing.Is6)
-                               ]
+                Tile.Size Tile.Is6
+                Tile.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Centered) ]
             ]
             (viewNewGuess model dispatch )
     ]
